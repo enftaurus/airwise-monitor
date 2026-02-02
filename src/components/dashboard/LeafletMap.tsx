@@ -1,8 +1,7 @@
 import { useEffect, useRef, useState } from "react";
-import { MapContainer, TileLayer, useMap, Marker, Popup, ZoomControl } from "react-leaflet";
+import { MapContainer, TileLayer, useMap, Marker, Popup } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
-import "leaflet.heat";
 import { MapPin, ZoomIn, ZoomOut, Layers, Locate } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -94,32 +93,39 @@ function HeatmapLayer({ points }: { points: AQIPoint[] }) {
   useEffect(() => {
     if (!points.length) return;
 
-    // Convert AQI points to heat data [lat, lng, intensity]
-    const heatData: [number, number, number][] = points.map((point) => {
-      // Normalize AQI to 0-1 intensity (higher AQI = higher intensity)
-      const intensity = Math.min(point.aqi / 300, 1);
-      return [point.lat, point.lng, intensity];
-    });
+    let heat: L.Layer | null = null;
 
-    // Create heatmap layer
-    const heat = (L as any).heatLayer(heatData, {
-      radius: 50,
-      blur: 30,
-      maxZoom: 10,
-      max: 1.0,
-      gradient: {
-        0.0: "#22c55e",
-        0.25: "#84cc16",
-        0.5: "#eab308",
-        0.75: "#f97316",
-        1.0: "#ef4444",
-      },
-    });
+    // Dynamically import leaflet.heat
+    import("leaflet.heat").then(() => {
+      // Convert AQI points to heat data [lat, lng, intensity]
+      const heatData: [number, number, number][] = points.map((point) => {
+        // Normalize AQI to 0-1 intensity (higher AQI = higher intensity)
+        const intensity = Math.min(point.aqi / 300, 1);
+        return [point.lat, point.lng, intensity];
+      });
 
-    heat.addTo(map);
+      // Create heatmap layer
+      heat = (L as any).heatLayer(heatData, {
+        radius: 50,
+        blur: 30,
+        maxZoom: 10,
+        max: 1.0,
+        gradient: {
+          0.0: "#22c55e",
+          0.25: "#84cc16",
+          0.5: "#eab308",
+          0.75: "#f97316",
+          1.0: "#ef4444",
+        },
+      });
+
+      heat.addTo(map);
+    });
 
     return () => {
-      map.removeLayer(heat);
+      if (heat) {
+        map.removeLayer(heat);
+      }
     };
   }, [map, points]);
 
