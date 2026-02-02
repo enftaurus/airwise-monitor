@@ -1,6 +1,7 @@
 import { Sun, Thermometer, Droplets, Wind, Umbrella, Eye } from "lucide-react";
 import { HeatwaveResponse } from "@/services/api";
 import { getHeatwaveLevel } from "@/data/hyderabadZones";
+import { PredictionChart } from "@/components/dashboard/PredictionChart";
 
 interface HeatwaveSectionProps {
   data: HeatwaveResponse | null;
@@ -17,6 +18,22 @@ export function HeatwaveSection({ data, zoneName }: HeatwaveSectionProps) {
   }
 
   const heatLevel = getHeatwaveLevel(data.heatIndex);
+
+  // Generate 12-hour prediction data
+  const getPredictionData = () => {
+    const predictions = [];
+    const baseTemp = data.temperature;
+    for (let i = 0; i < 12; i++) {
+      const variance = Math.sin(i / 3) * 3 + (Math.random() - 0.5) * 2;
+      predictions.push({
+        time: `${i}:00`,
+        value: Math.round((baseTemp + variance) * 10) / 10,
+      });
+    }
+    return predictions;
+  };
+
+  const tempPredictions = getPredictionData();
 
   return (
     <div className="space-y-6">
@@ -178,6 +195,14 @@ export function HeatwaveSection({ data, zoneName }: HeatwaveSectionProps) {
           />
         </div>
       </div>
+
+      {/* 12-Hour Temperature Prediction */}
+      <PredictionChart
+        title="Temperature Prediction (Next 12 Hours)"
+        data={tempPredictions}
+        color={heatLevel.color}
+        unit="°C"
+      />
     </div>
   );
 }

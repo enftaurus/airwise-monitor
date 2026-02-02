@@ -63,12 +63,12 @@ export const hyderabadZones: ZoneData[] = [
   },
 ];
 
-// Hyderabad map bounds
+// Hyderabad map bounds - Complete city coverage
 export const HYDERABAD_BOUNDS = {
-  north: 17.55,
-  south: 17.25,
-  east: 78.65,
-  west: 78.25,
+  north: 17.6,
+  south: 17.2,
+  east: 78.75,
+  west: 78.15,
 };
 
 export const HYDERABAD_CENTER: [number, number] = [17.385, 78.4867];

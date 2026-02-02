@@ -46,12 +46,12 @@ export default function Index() {
         <div className="max-w-[1800px] mx-auto px-4 md:px-6 py-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-green-500 flex items-center justify-center">
-                <span className="text-primary-foreground font-bold text-lg">H</span>
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-orange-400 to-amber-500 flex items-center justify-center">
+                <span className="text-white font-bold text-lg">U</span>
               </div>
               <div>
-                <h1 className="font-bold text-lg">Hyderabad Monitor</h1>
-                <p className="text-xs text-muted-foreground">Real-time Environmental Data</p>
+                <h1 className="font-bold text-lg">Urban Watch</h1>
+                <p className="text-xs text-muted-foreground">Real-time Environmental Intelligence</p>
               </div>
             </div>
 
@@ -177,13 +177,13 @@ export default function Index() {
       <footer className="py-6 px-4 md:px-6 border-t border-border mt-8">
         <div className="max-w-[1800px] mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-green-500 flex items-center justify-center">
-              <span className="text-primary-foreground font-bold">H</span>
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-orange-400 to-amber-500 flex items-center justify-center">
+              <span className="text-white font-bold">U</span>
             </div>
-            <span className="font-semibold">Hyderabad Environmental Monitor</span>
+            <span className="font-semibold">Urban Watch - Environmental Intelligence</span>
           </div>
           <p className="text-sm text-muted-foreground">
-            AI-powered monitoring for AQI, Floods & Heatwave | Telangana, India
+            Real-time monitoring for AQI, Floods & Heatwave | Hyderabad, India
           </p>
         </div>
       </footer>

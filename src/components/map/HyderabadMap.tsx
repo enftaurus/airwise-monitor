@@ -8,7 +8,7 @@ import { ZoneData, HYDERABAD_BOUNDS, HYDERABAD_CENTER, getAQICategory, getFloodR
 import { AQIResponse, FloodResponse, HeatwaveResponse } from "@/services/api";
 
 // Fix for default markers not showing
-delete (L.Icon.Default.prototype as any)._getIconUrl;
+delete (L.Icon.Default.prototype as unknown as Record<string, unknown>)._getIconUrl;
 L.Icon.Default.mergeOptions({
   iconRetinaUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png",
   iconUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png",
@@ -28,17 +28,17 @@ interface HyderabadMapProps {
 }
 
 // Custom marker icon based on data mode
-function createZoneIcon(zone: ZoneData, mode: DataMode, data: any): L.DivIcon {
+function createZoneIcon(zone: ZoneData, mode: DataMode, data: AQIResponse | FloodResponse | HeatwaveResponse | undefined): L.DivIcon {
   let value = 0;
   let color = "#22c55e";
 
-  if (mode === "aqi" && data) {
+  if (mode === "aqi" && data && "aqi" in data) {
     value = data.aqi || 0;
     color = getAQICategory(value).color;
-  } else if (mode === "flood" && data) {
+  } else if (mode === "flood" && data && "floodRisk" in data) {
     value = data.floodRisk || 0;
     color = getFloodRiskLevel(value).color;
-  } else if (mode === "heatwave" && data) {
+  } else if (mode === "heatwave" && data && "heatIndex" in data) {
     value = data.heatIndex || 0;
     color = getHeatwaveLevel(value).color;
   }
@@ -155,8 +155,8 @@ export function HyderabadMap({
     return heatwaveData[zone.id];
   };
 
-  const getPopupContent = (zone: ZoneData, data: any) => {
-    if (mode === "aqi" && data) {
+  const getPopupContent = (zone: ZoneData, data: AQIResponse | FloodResponse | HeatwaveResponse | undefined) => {
+    if (mode === "aqi" && data && "aqi" in data) {
       const category = getAQICategory(data.aqi);
       return `
         <div class="min-w-[160px]">
@@ -170,7 +170,7 @@ export function HyderabadMap({
         </div>
       `;
     }
-    if (mode === "flood" && data) {
+    if (mode === "flood" && data && "floodRisk" in data) {
       const level = getFloodRiskLevel(data.floodRisk);
       return `
         <div class="min-w-[160px]">
@@ -184,7 +184,7 @@ export function HyderabadMap({
         </div>
       `;
     }
-    if (mode === "heatwave" && data) {
+    if (mode === "heatwave" && data && "heatIndex" in data) {
       const level = getHeatwaveLevel(data.heatIndex);
       return `
         <div class="min-w-[160px]">
@@ -209,12 +209,12 @@ export function HyderabadMap({
         ref={mapRef}
         className="w-full h-full"
         zoomControl={false}
-        style={{ background: "hsl(222, 47%, 11%)" }}
+        style={{ background: "hsl(40, 20%, 85%)" }}
       >
-        {/* Dark theme tiles */}
+        {/* Light peat-brown theme tiles */}
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
-          url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+          url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
         />
 
         {/* Restrict bounds to Hyderabad */}

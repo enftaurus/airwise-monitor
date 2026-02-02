@@ -1,8 +1,15 @@
 import type { Config } from "tailwindcss";
+import animate from "tailwindcss-animate";
 
-export default {
-  darkMode: ["class"],
-  content: ["./pages/**/*.{ts,tsx}", "./components/**/*.{ts,tsx}", "./app/**/*.{ts,tsx}", "./src/**/*.{ts,tsx}"],
+const config: Config = {
+  darkMode: "class", // ✅ FIXED (must be string, not array)
+  content: [
+    "./index.html",
+    "./pages/**/*.{ts,tsx}",
+    "./components/**/*.{ts,tsx}",
+    "./app/**/*.{ts,tsx}",
+    "./src/**/*.{ts,tsx}",
+  ],
   prefix: "",
   theme: {
     container: {
@@ -14,7 +21,7 @@ export default {
     },
     extend: {
       fontFamily: {
-        sans: ['Inter', 'system-ui', 'sans-serif'],
+        sans: ["Inter", "system-ui", "sans-serif"],
       },
       colors: {
         border: "hsl(var(--border))",
@@ -22,6 +29,7 @@ export default {
         ring: "hsl(var(--ring))",
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
+
         primary: {
           DEFAULT: "hsl(var(--primary))",
           foreground: "hsl(var(--primary-foreground))",
@@ -50,6 +58,7 @@ export default {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
+
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",
           foreground: "hsl(var(--sidebar-foreground))",
@@ -60,6 +69,7 @@ export default {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
+
         aqi: {
           good: "hsl(var(--aqi-good))",
           moderate: "hsl(var(--aqi-moderate))",
@@ -74,9 +84,9 @@ export default {
         sm: "calc(var(--radius) - 4px)",
       },
       boxShadow: {
-        'card': 'var(--shadow-card)',
-        'elevated': 'var(--shadow-elevated)',
-        'glass': 'var(--shadow-glass)',
+        card: "var(--shadow-card)",
+        elevated: "var(--shadow-elevated)",
+        glass: "var(--shadow-glass)",
       },
       keyframes: {
         "accordion-down": {
@@ -105,9 +115,12 @@ export default {
         "accordion-up": "accordion-up 0.2s ease-out",
         "fade-up": "fade-up 0.5s ease-out forwards",
         "slide-in": "slide-in 0.3s ease-out forwards",
-        "pulse-ring": "pulse-ring 2s cubic-bezier(0.4, 0, 0.6, 1) infinite",
+        "pulse-ring":
+          "pulse-ring 2s cubic-bezier(0.4, 0, 0.6, 1) infinite",
       },
     },
   },
-  plugins: [require("tailwindcss-animate")],
-} satisfies Config;
+  plugins: [animate],
+};
+
+export default config;
