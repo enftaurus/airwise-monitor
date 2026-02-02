@@ -111,6 +111,10 @@
     @apply border-border;
   }
 
+  html {
+    @apply dark;
+  }
+
   body {
     @apply bg-background text-foreground antialiased;
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
@@ -219,11 +223,22 @@
   @apply bg-card border-l border-b border-border;
 }
 
-.custom-aqi-marker {
+.custom-aqi-marker,
+.custom-zone-marker {
   background: transparent !important;
   border: none !important;
 }
 
 .leaflet-control-attribution {
   @apply bg-card/80 backdrop-blur-sm text-xs text-muted-foreground;
+}
+
+/* Leaflet popup styling for dark theme */
+.leaflet-popup-content-wrapper {
+  background: hsl(222, 47%, 9%) !important;
+  color: hsl(210, 40%, 98%) !important;
+}
+
+.leaflet-popup-tip {
+  background: hsl(222, 47%, 9%) !important;
 }

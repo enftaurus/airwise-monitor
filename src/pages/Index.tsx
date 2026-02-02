@@ -1,182 +1,192 @@
-import { useState, useMemo } from "react";
-import { NavBar } from "@/components/dashboard/NavBar";
-import { LeafletMap } from "@/components/dashboard/LeafletMap";
-import { AQICard } from "@/components/dashboard/AQICard";
-import { RankingsCard } from "@/components/dashboard/RankingsCard";
-import { TrendChart } from "@/components/dashboard/TrendChart";
-import { XAICard } from "@/components/dashboard/XAICard";
-import { SuggestionsSection, getDefaultSuggestions, getDefaultVulnerableGroups } from "@/components/dashboard/SuggestionsSection";
-import { AlertOverlay } from "@/components/dashboard/AlertOverlay";
-import { indianCities, cityCoordinates, getCityData, getAQICategory } from "@/data/aqiLocations";
-
-// Mock trend data
-const mockTrendData = [
-  { time: "12AM", aqi: 145 },
-  { time: "3AM", aqi: 132 },
-  { time: "6AM", aqi: 156 },
-  { time: "9AM", aqi: 189 },
-  { time: "12PM", aqi: 178 },
-  { time: "3PM", aqi: 165 },
-  { time: "6PM", aqi: 187 },
-  { time: "9PM", aqi: 195, predicted: 195 },
-  { time: "12AM", aqi: undefined, predicted: 210 },
-  { time: "3AM", aqi: undefined, predicted: 198 },
-];
-
-const mockFactors = [
-  { factor: "PM2.5", percentage: 55, color: "hsl(var(--aqi-severe))" },
-  { factor: "Vehicle Emissions", percentage: 22, color: "hsl(var(--aqi-poor))" },
-  { factor: "Industrial Activity", percentage: 13, color: "hsl(var(--aqi-moderate))" },
-  { factor: "Weather Conditions", percentage: 10, color: "hsl(var(--primary))" },
-];
-
-const mockPollutants = [
-  { name: "PM2.5", value: 98, max: 150, unit: "µg/m³" },
-  { name: "PM10", value: 145, max: 250, unit: "µg/m³" },
-  { name: "NO₂", value: 42, max: 100, unit: "ppb" },
-  { name: "CO", value: 1.2, max: 4, unit: "ppm" },
-];
+import { useState } from "react";
+import { Wind, Droplets, Thermometer, RefreshCw } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { HyderabadMap } from "@/components/map/HyderabadMap";
+import { AQISection } from "@/components/sections/AQISection";
+import { FloodSection } from "@/components/sections/FloodSection";
+import { HeatwaveSection } from "@/components/sections/HeatwaveSection";
+import { useZoneData, DataType } from "@/hooks/useZoneData";
+import { Switch } from "@/components/ui/switch";
 
 export default function Index() {
-  const [location, setLocation] = useState("New Delhi, India");
-  const [alerts, setAlerts] = useState([
-    {
-      id: "1",
-      type: "pollution" as const,
-      title: "Severe Air Pollution",
-      message: "Avoid outdoor activities for the next 24 hours.",
-      severity: "critical" as const,
-    },
-  ]);
+  const [activeTab, setActiveTab] = useState<DataType>("aqi");
+  const {
+    zones,
+    aqiData,
+    floodData,
+    heatwaveData,
+    selectedZone,
+    setSelectedZone,
+    isLoading,
+    refreshData,
+    useMockData,
+    setUseMockData,
+  } = useZoneData();
 
-  // Get current city data
-  const currentCityData = useMemo(() => {
-    return getCityData(location);
-  }, [location]);
-
-  const currentAQI = currentCityData?.aqi ?? 187;
-  const currentCategory = getAQICategory(currentAQI);
-
-  // Get map center based on selected location
-  const mapCenter = useMemo((): [number, number] => {
-    const coords = cityCoordinates[location];
-    if (coords) return [coords.lat, coords.lng];
-    if (currentCityData) return [currentCityData.lat, currentCityData.lng];
-    return [28.6139, 77.2090]; // Default to Delhi
-  }, [location, currentCityData]);
-
-  // Convert city data to map points
-  const aqiPoints = useMemo(() => {
-    return indianCities.map((city) => ({
-      lat: city.lat,
-      lng: city.lng,
-      aqi: city.aqi,
-      city: city.city,
-    }));
-  }, []);
-
-  // Get rankings sorted by AQI
-  const rankings = useMemo(() => {
-    return [...indianCities]
-      .sort((a, b) => b.aqi - a.aqi)
-      .slice(0, 6)
-      .map((city, index) => ({
-        rank: index + 1,
-        city: city.city,
-        aqi: city.aqi,
-        trend: "stable" as const,
-      }));
-  }, []);
-
-  const handleDismissAlert = (id: string) => {
-    setAlerts((prev) => prev.filter((alert) => alert.id !== id));
+  const handleTabChange = (value: string) => {
+    setActiveTab(value as DataType);
   };
 
-  const handleCitySelect = (cityName: string) => {
-    // Find the full location name
-    const city = indianCities.find((c) => c.city === cityName);
-    if (city) {
-      setLocation(`${city.city}, India`);
-    }
+  const handleRefresh = () => {
+    refreshData(activeTab);
+  };
+
+  const getSelectedZoneData = () => {
+    if (!selectedZone) return null;
+    if (activeTab === "aqi") return aqiData[selectedZone.id];
+    if (activeTab === "flood") return floodData[selectedZone.id];
+    return heatwaveData[selectedZone.id];
   };
 
   return (
     <div className="min-h-screen bg-background">
-      <NavBar location={location} onLocationChange={setLocation} />
+      {/* Header */}
+      <header className="sticky top-0 z-50 border-b border-border bg-card/80 backdrop-blur-xl">
+        <div className="max-w-[1800px] mx-auto px-4 md:px-6 py-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-green-500 flex items-center justify-center">
+                <span className="text-primary-foreground font-bold text-lg">H</span>
+              </div>
+              <div>
+                <h1 className="font-bold text-lg">Hyderabad Monitor</h1>
+                <p className="text-xs text-muted-foreground">Real-time Environmental Data</p>
+              </div>
+            </div>
 
-      {/* Hero Section - Map + AQI */}
-      <section className="pt-16">
-        <div className="max-w-[1800px] mx-auto px-4 md:px-6 py-6">
-          <div className="grid lg:grid-cols-[1fr_380px] gap-6 min-h-[500px]">
-            <LeafletMap
-              center={mapCenter}
-              zoom={10}
-              aqiPoints={aqiPoints}
-              onLocationSelect={handleCitySelect}
-            />
-            <div className="lg:sticky lg:top-24 h-fit">
-              <AQICard
-                aqi={currentAQI}
-                category={currentCategory}
-                pollutants={mockPollutants}
-                lastUpdated={currentCityData?.lastUpdated ?? "5 mins ago"}
-                isWarning={currentAQI > 150}
+            <div className="flex items-center gap-4">
+              {/* Mock Data Toggle */}
+              <div className="flex items-center gap-2 text-sm">
+                <span className="text-muted-foreground">Mock Data</span>
+                <Switch
+                  checked={useMockData}
+                  onCheckedChange={setUseMockData}
+                />
+              </div>
+
+              {/* Refresh Button */}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleRefresh}
+                disabled={isLoading}
+                className="gap-2"
+              >
+                <RefreshCw className={`w-4 h-4 ${isLoading ? "animate-spin" : ""}`} />
+                Refresh
+              </Button>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      {/* Main Tabs */}
+      <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
+        <div className="sticky top-[65px] z-40 bg-background/95 backdrop-blur-sm border-b border-border">
+          <div className="max-w-[1800px] mx-auto px-4 md:px-6">
+            <TabsList className="h-14 bg-transparent gap-2">
+              <TabsTrigger
+                value="aqi"
+                className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground gap-2 px-6"
+              >
+                <Wind className="w-4 h-4" />
+                AQI
+              </TabsTrigger>
+              <TabsTrigger
+                value="flood"
+                className="data-[state=active]:bg-blue-600 data-[state=active]:text-white gap-2 px-6"
+              >
+                <Droplets className="w-4 h-4" />
+                Floods
+              </TabsTrigger>
+              <TabsTrigger
+                value="heatwave"
+                className="data-[state=active]:bg-orange-600 data-[state=active]:text-white gap-2 px-6"
+              >
+                <Thermometer className="w-4 h-4" />
+                Heatwave
+              </TabsTrigger>
+            </TabsList>
+          </div>
+        </div>
+
+        {/* Content Area */}
+        <main className="max-w-[1800px] mx-auto px-4 md:px-6 py-6">
+          <div className="grid lg:grid-cols-[1fr_500px] gap-6">
+            {/* Map */}
+            <div className="h-[500px] lg:h-[calc(100vh-200px)] lg:sticky lg:top-[140px]">
+              <HyderabadMap
+                zones={zones}
+                aqiData={aqiData}
+                floodData={floodData}
+                heatwaveData={heatwaveData}
+                mode={activeTab}
+                selectedZone={selectedZone}
+                onZoneSelect={setSelectedZone}
               />
             </div>
-          </div>
-        </div>
-      </section>
 
-      {/* Data & Insights Section */}
-      <section className="py-8 px-4 md:px-6">
-        <div className="max-w-[1800px] mx-auto">
-          <h2 className="text-2xl font-bold mb-6">Data & Insights</h2>
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <RankingsCard rankings={rankings} onCityClick={handleCitySelect} />
-            <TrendChart data={mockTrendData} />
-            <XAICard
-              factors={mockFactors}
-              explanation="PM2.5 is the dominant factor driving today's pollution levels, primarily due to increased vehicle emissions during morning rush hours and reduced wind speeds limiting pollutant dispersion."
-            />
-          </div>
-        </div>
-      </section>
+            {/* Data Panel */}
+            <div className="space-y-6">
+              {/* Zone Selector */}
+              <div className="glass-card rounded-xl p-4">
+                <h3 className="text-sm font-medium text-muted-foreground mb-3">Select Zone</h3>
+                <div className="flex flex-wrap gap-2">
+                  {zones.map((zone) => (
+                    <Button
+                      key={zone.id}
+                      variant={selectedZone?.id === zone.id ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setSelectedZone(zone)}
+                      className="text-xs"
+                    >
+                      {zone.name}
+                    </Button>
+                  ))}
+                </div>
+              </div>
 
-      {/* Suggestions & Health Advisory */}
-      <SuggestionsSection
-        aqi={currentAQI}
-        suggestions={getDefaultSuggestions(currentAQI)}
-        vulnerableGroups={getDefaultVulnerableGroups()}
-      />
+              {/* Tab Content */}
+              <TabsContent value="aqi" className="mt-0">
+                <AQISection
+                  data={selectedZone ? aqiData[selectedZone.id] : null}
+                  zoneName={selectedZone?.name || ""}
+                />
+              </TabsContent>
+
+              <TabsContent value="flood" className="mt-0">
+                <FloodSection
+                  data={selectedZone ? floodData[selectedZone.id] : null}
+                  zoneName={selectedZone?.name || ""}
+                />
+              </TabsContent>
+
+              <TabsContent value="heatwave" className="mt-0">
+                <HeatwaveSection
+                  data={selectedZone ? heatwaveData[selectedZone.id] : null}
+                  zoneName={selectedZone?.name || ""}
+                />
+              </TabsContent>
+            </div>
+          </div>
+        </main>
+      </Tabs>
 
       {/* Footer */}
-      <footer className="py-8 px-4 md:px-6 border-t border-border">
+      <footer className="py-6 px-4 md:px-6 border-t border-border mt-8">
         <div className="max-w-[1800px] mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-aqi-good flex items-center justify-center">
-              <span className="text-primary-foreground font-bold">A</span>
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-green-500 flex items-center justify-center">
+              <span className="text-primary-foreground font-bold">H</span>
             </div>
-            <span className="font-semibold">AirGuard AI</span>
+            <span className="font-semibold">Hyderabad Environmental Monitor</span>
           </div>
           <p className="text-sm text-muted-foreground">
-            AI-powered air quality monitoring for a healthier tomorrow
+            AI-powered monitoring for AQI, Floods & Heatwave | Telangana, India
           </p>
-          <div className="flex items-center gap-4 text-sm text-muted-foreground">
-            <a href="#" className="hover:text-foreground transition-colors">
-              About
-            </a>
-            <a href="#" className="hover:text-foreground transition-colors">
-              API
-            </a>
-            <a href="#" className="hover:text-foreground transition-colors">
-              Contact
-            </a>
-          </div>
         </div>
       </footer>
-
-      {/* Alert Overlays */}
-      <AlertOverlay alerts={alerts} onDismiss={handleDismissAlert} />
     </div>
   );
 }
