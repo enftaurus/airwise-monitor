@@ -1,9 +1,11 @@
-// 7 Hyderabad zones with coordinates
+// 9 Hyderabad zones - 8 equidistant points + Charminar center
 export interface ZoneData {
   id: string;
   name: string;
+  area: string;
   lat: number;
   lng: number;
+  direction: string;
   aqi?: number;
   floodRisk?: number;
   heatIndex?: number;
@@ -21,54 +23,84 @@ export interface ZoneData {
 export const hyderabadZones: ZoneData[] = [
   {
     id: "zone-1",
-    name: "Secunderabad",
-    lat: 17.4399,
-    lng: 78.4983,
+    name: "Medchal",
+    area: "Medchal, Telangana, India",
+    direction: "North",
+    lat: 17.541464,
+    lng: 78.474700,
   },
   {
     id: "zone-2",
-    name: "Begumpet",
-    lat: 17.4432,
-    lng: 78.4677,
+    name: "Ghatkesar",
+    area: "Ghatkesar, Telangana, India",
+    direction: "North-East",
+    lat: 17.488739,
+    lng: 78.608047,
   },
   {
     id: "zone-3",
-    name: "Banjara Hills",
-    lat: 17.4156,
-    lng: 78.4347,
+    name: "Uppal",
+    area: "Uppal, Hyderabad, Telangana, India",
+    direction: "East",
+    lat: 17.361512,
+    lng: 78.663150,
   },
   {
     id: "zone-4",
-    name: "Hitech City",
-    lat: 17.4435,
-    lng: 78.3772,
+    name: "Ibrahimpatnam",
+    area: "Ibrahimpatnam, Telangana, India",
+    direction: "South-East",
+    lat: 17.234373,
+    lng: 78.607862,
   },
   {
     id: "zone-5",
-    name: "Charminar",
-    lat: 17.3616,
-    lng: 78.4747,
+    name: "Shamshabad",
+    area: "Shamshabad, Hyderabad, Telangana, India",
+    direction: "South",
+    lat: 17.181736,
+    lng: 78.474700,
   },
   {
     id: "zone-6",
-    name: "Gachibowli",
-    lat: 17.4401,
-    lng: 78.3489,
+    name: "Shankarpally",
+    area: "Shankarpally, Telangana, India",
+    direction: "South-West",
+    lat: 17.234373,
+    lng: 78.341538,
   },
   {
     id: "zone-7",
-    name: "LB Nagar",
-    lat: 17.3457,
-    lng: 78.5522,
+    name: "Patancheru",
+    area: "Patancheru, Hyderabad, Telangana, India",
+    direction: "West",
+    lat: 17.361512,
+    lng: 78.286250,
+  },
+  {
+    id: "zone-8",
+    name: "Kompally",
+    area: "Kompally, Hyderabad, Telangana, India",
+    direction: "North-West",
+    lat: 17.488739,
+    lng: 78.341353,
+  },
+  {
+    id: "zone-9",
+    name: "Charminar",
+    area: "Charminar, Hyderabad, Telangana, India",
+    direction: "Center",
+    lat: 17.3616,
+    lng: 78.4747,
   },
 ];
 
 // Hyderabad map bounds - Complete city coverage
 export const HYDERABAD_BOUNDS = {
   north: 17.6,
-  south: 17.2,
+  south: 17.1,
   east: 78.75,
-  west: 78.15,
+  west: 78.2,
 };
 
 export const HYDERABAD_CENTER: [number, number] = [17.385, 78.4867];
@@ -96,4 +128,30 @@ export function getHeatwaveLevel(index: number): { label: string; color: string 
   if (index <= 39) return { label: "Extreme Caution", color: "hsl(var(--aqi-poor))" };
   if (index <= 51) return { label: "Danger", color: "hsl(var(--aqi-severe))" };
   return { label: "Extreme Danger", color: "#831843" };
+}
+
+// Get heatmap color based on AQI value
+export function getAQIHeatmapColor(aqi: number): string {
+  if (aqi <= 50) return "#22c55e"; // Green
+  if (aqi <= 100) return "#eab308"; // Yellow
+  if (aqi <= 150) return "#f97316"; // Orange
+  if (aqi <= 200) return "#ef4444"; // Red
+  if (aqi <= 300) return "#7c3aed"; // Purple
+  return "#831843"; // Maroon
+}
+
+export function getFloodHeatmapColor(risk: number): string {
+  if (risk <= 20) return "#22c55e";
+  if (risk <= 40) return "#eab308";
+  if (risk <= 60) return "#f97316";
+  if (risk <= 80) return "#ef4444";
+  return "#831843";
+}
+
+export function getHeatwaveHeatmapColor(temp: number): string {
+  if (temp <= 27) return "#22c55e";
+  if (temp <= 32) return "#eab308";
+  if (temp <= 39) return "#f97316";
+  if (temp <= 45) return "#ef4444";
+  return "#831843";
 }
