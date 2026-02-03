@@ -128,18 +128,18 @@ export default function Index() {
             </div>
 
             {/* Data Panel */}
-            <div className="space-y-6">
+            <div className="space-y-4 overflow-hidden">
               {/* Zone Selector */}
-              <div className="glass-card rounded-xl p-4">
-                <h3 className="text-sm font-medium text-muted-foreground mb-3">Select Zone</h3>
-                <div className="flex flex-wrap gap-2">
+              <div className="glass-card rounded-xl p-3">
+                <h3 className="text-xs font-medium text-muted-foreground mb-2">Select Zone</h3>
+                <div className="flex flex-wrap gap-1.5">
                   {zones.map((zone) => (
                     <Button
                       key={zone.id}
                       variant={selectedZone?.id === zone.id ? "default" : "outline"}
                       size="sm"
                       onClick={() => setSelectedZone(zone)}
-                      className="text-xs"
+                      className="text-[11px] px-2 py-1 h-7"
                     >
                       {zone.name}
                     </Button>

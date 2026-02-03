@@ -1,4 +1,4 @@
-import { Wind, Droplets, Thermometer, Volume2 } from "lucide-react";
+import { Wind, Droplets, Volume2 } from "lucide-react";
 import { AQIResponse } from "@/services/api";
 import { getAQICategory } from "@/data/hyderabadZones";
 import { PredictionChart } from "@/components/dashboard/PredictionChart";
@@ -36,7 +36,7 @@ export function AQISection({ data, zoneName }: AQISectionProps) {
   const aqiPredictions = getPredictionData();
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -46,9 +46,9 @@ export function AQISection({ data, zoneName }: AQISectionProps) {
               LIVE
             </span>
           </div>
-          <h2 className="text-xl font-bold mt-2">{zoneName} Air Quality Index</h2>
-          <p className="text-sm text-muted-foreground">
-            Real-time PM2.5, PM10 air pollution level in Hyderabad
+          <h2 className="text-lg font-bold mt-2">{zoneName} Air Quality Index</h2>
+          <p className="text-xs text-muted-foreground">
+            Real-time PM2.5, PM10 air pollution level
           </p>
           <p className="text-xs text-muted-foreground mt-1">
             Last Updated: {data.lastUpdated} (Local Time)
@@ -57,22 +57,22 @@ export function AQISection({ data, zoneName }: AQISectionProps) {
       </div>
 
       {/* Main AQI Display */}
-      <div className="glass-card rounded-2xl p-6 bg-gradient-to-br from-card/80 to-card/40">
-        <div className="flex items-center gap-8">
-          <div>
-            <p className="text-sm text-muted-foreground flex items-center gap-2">
+      <div className="glass-card rounded-xl p-4 bg-gradient-to-br from-card/80 to-card/40">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+          <div className="flex-shrink-0">
+            <p className="text-xs text-muted-foreground flex items-center gap-2">
               <Wind className="w-4 h-4" />
               Air Quality Index
             </p>
-            <div className="flex items-baseline gap-4 mt-2">
+            <div className="flex items-baseline gap-3 mt-1">
               <span
-                className="text-7xl font-bold"
+                className="text-5xl font-bold"
                 style={{ color: category.color }}
               >
                 {data.aqi}
               </span>
               <span
-                className="px-4 py-2 rounded-full text-sm font-medium"
+                className="px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap"
                 style={{
                   backgroundColor: `${category.color}20`,
                   color: category.color,
@@ -81,37 +81,39 @@ export function AQISection({ data, zoneName }: AQISectionProps) {
                 {category.label}
               </span>
             </div>
-            <p className="text-xs text-muted-foreground mt-2">AQI (US)</p>
+            <p className="text-xs text-muted-foreground mt-1">AQI (US)</p>
           </div>
 
           {/* Pollutant Summary */}
-          <div className="flex gap-6 ml-auto">
-            <div>
-              <p className="text-sm text-muted-foreground">PM2.5</p>
-              <p className="text-xl font-bold">
-                {data.pm25} <span className="text-xs text-muted-foreground">µg/m³</span>
+          <div className="flex gap-4 sm:ml-auto flex-wrap">
+            <div className="min-w-[60px]">
+              <p className="text-xs text-muted-foreground">PM2.5</p>
+              <p className="text-lg font-bold">
+                {data.pm25}
+                <span className="text-xs text-muted-foreground ml-1">µg/m³</span>
               </p>
             </div>
-            <div>
-              <p className="text-sm text-muted-foreground">PM10</p>
-              <p className="text-xl font-bold">
-                {data.pm10} <span className="text-xs text-muted-foreground">µg/m³</span>
+            <div className="min-w-[60px]">
+              <p className="text-xs text-muted-foreground">PM10</p>
+              <p className="text-lg font-bold">
+                {data.pm10}
+                <span className="text-xs text-muted-foreground ml-1">µg/m³</span>
               </p>
             </div>
           </div>
         </div>
 
         {/* AQI Scale */}
-        <div className="mt-6">
-          <div className="flex text-xs text-muted-foreground mb-1">
+        <div className="mt-4">
+          <div className="flex text-[10px] text-muted-foreground mb-1">
             <span className="flex-1">Good</span>
             <span className="flex-1 text-center">Moderate</span>
             <span className="flex-1 text-center">Poor</span>
             <span className="flex-1 text-center">Unhealthy</span>
             <span className="flex-1 text-center">Severe</span>
-            <span className="flex-1 text-right">Hazardous</span>
+            <span className="flex-1 text-right">Hazard</span>
           </div>
-          <div className="h-3 rounded-full overflow-hidden flex">
+          <div className="h-2 rounded-full overflow-hidden flex">
             <div className="flex-1 bg-aqi-good" />
             <div className="flex-1 bg-aqi-moderate" />
             <div className="flex-1 bg-aqi-poor" />
@@ -119,7 +121,7 @@ export function AQISection({ data, zoneName }: AQISectionProps) {
             <div className="flex-1 bg-purple-600" />
             <div className="flex-1 bg-pink-900" />
           </div>
-          <div className="flex text-xs text-muted-foreground mt-1">
+          <div className="flex text-[10px] text-muted-foreground mt-1">
             <span>0</span>
             <span className="flex-1 text-center">50</span>
             <span className="flex-1 text-center">100</span>
@@ -132,35 +134,31 @@ export function AQISection({ data, zoneName }: AQISectionProps) {
       </div>
 
       {/* Pollutant Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 gap-3">
         <PollutantCard
-          icon={<Wind className="w-5 h-5" />}
-          label="Particulate Matter"
-          sublabel="PM2.5"
+          icon={<Wind className="w-4 h-4" />}
+          label="PM2.5"
           value={data.pm25}
           unit="µg/m³"
           severity={data.pm25 > 100 ? "high" : data.pm25 > 50 ? "medium" : "low"}
         />
         <PollutantCard
-          icon={<Wind className="w-5 h-5" />}
-          label="Particulate Matter"
-          sublabel="PM10"
+          icon={<Wind className="w-4 h-4" />}
+          label="PM10"
           value={data.pm10}
           unit="µg/m³"
           severity={data.pm10 > 150 ? "high" : data.pm10 > 75 ? "medium" : "low"}
         />
         <PollutantCard
-          icon={<Droplets className="w-5 h-5" />}
+          icon={<Droplets className="w-4 h-4" />}
           label="TVOC"
-          sublabel="TVOC"
-          value={data.tvoc.toFixed(3)}
+          value={data.tvoc.toFixed(2)}
           unit="ppm"
           severity={data.tvoc > 5 ? "high" : data.tvoc > 2 ? "medium" : "low"}
         />
         <PollutantCard
-          icon={<Volume2 className="w-5 h-5" />}
+          icon={<Volume2 className="w-4 h-4" />}
           label="Noise"
-          sublabel="NOISE"
           value={data.noise}
           unit="dB"
           severity={data.noise > 70 ? "high" : data.noise > 50 ? "medium" : "low"}
@@ -181,13 +179,12 @@ export function AQISection({ data, zoneName }: AQISectionProps) {
 interface PollutantCardProps {
   icon: React.ReactNode;
   label: string;
-  sublabel: string;
   value: number | string;
   unit: string;
   severity: "low" | "medium" | "high";
 }
 
-function PollutantCard({ icon, label, sublabel, value, unit, severity }: PollutantCardProps) {
+function PollutantCard({ icon, label, value, unit, severity }: PollutantCardProps) {
   const borderColor =
     severity === "high"
       ? "border-l-red-500"
@@ -196,16 +193,17 @@ function PollutantCard({ icon, label, sublabel, value, unit, severity }: Polluta
       : "border-l-green-500";
 
   return (
-    <div className={`glass-card rounded-xl p-4 border-l-4 ${borderColor}`}>
-      <div className="flex items-center gap-3">
-        <div className="p-2 rounded-lg bg-muted/50 text-muted-foreground">{icon}</div>
-        <div className="flex-1">
-          <p className="text-sm text-muted-foreground">{label}</p>
-          <p className="text-xs text-primary">({sublabel})</p>
+    <div className={`glass-card rounded-lg p-3 border-l-4 ${borderColor}`}>
+      <div className="flex items-center gap-2">
+        <div className="p-1.5 rounded-md bg-muted/50 text-muted-foreground flex-shrink-0">
+          {icon}
         </div>
-        <div className="text-right">
-          <p className="text-2xl font-bold">{value}</p>
-          <p className="text-xs text-muted-foreground">{unit}</p>
+        <div className="flex-1 min-w-0">
+          <p className="text-xs text-muted-foreground truncate">{label}</p>
+        </div>
+        <div className="text-right flex-shrink-0">
+          <p className="text-lg font-bold leading-tight">{value}</p>
+          <p className="text-[10px] text-muted-foreground">{unit}</p>
         </div>
       </div>
     </div>
