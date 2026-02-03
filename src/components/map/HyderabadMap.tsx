@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { MapContainer, TileLayer, useMap, Marker, Popup, Circle } from "react-leaflet";
+import { MapContainer, TileLayer, useMap, Marker, Popup, Polygon } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { MapPin, ZoomIn, ZoomOut, Locate } from "lucide-react";
@@ -35,6 +35,22 @@ interface HyderabadMapProps {
   mode: DataMode;
   selectedZone: ZoneData | null;
   onZoneSelect: (zone: ZoneData) => void;
+}
+
+// Generate polygon coordinates for each zone (hexagonal shape around the point)
+function generateZonePolygon(lat: number, lng: number, radiusKm: number = 8): [number, number][] {
+  const points: [number, number][] = [];
+  const numPoints = 6; // Hexagon
+  
+  for (let i = 0; i < numPoints; i++) {
+    const angle = (i * 360 / numPoints) * (Math.PI / 180);
+    // Approximate degree offset for the radius
+    const latOffset = (radiusKm / 111) * Math.cos(angle);
+    const lngOffset = (radiusKm / (111 * Math.cos(lat * Math.PI / 180))) * Math.sin(angle);
+    points.push([lat + latOffset, lng + lngOffset]);
+  }
+  
+  return points;
 }
 
 // Custom marker icon based on data mode
@@ -101,31 +117,39 @@ function createZoneIcon(
   });
 }
 
-// Get heatmap color and radius based on mode and value
-function getHeatmapConfig(
+// Get heatmap color based on mode and value
+function getZoneColor(
   mode: DataMode,
   data: AQIResponse | FloodResponse | HeatwaveResponse | undefined
-): { color: string; radius: number; opacity: number } {
-  let value = 0;
-  let color = "#22c55e";
+): string {
+  if (mode === "aqi" && data && "aqi" in data) {
+    return getAQIHeatmapColor(data.aqi || 0);
+  } else if (mode === "flood" && data && "floodRisk" in data) {
+    return getFloodHeatmapColor(data.floodRisk || 0);
+  } else if (mode === "heatwave" && data && "heatIndex" in data) {
+    return getHeatwaveHeatmapColor(data.heatIndex || 0);
+  }
+  return "#22c55e";
+}
 
+// Get opacity based on severity
+function getZoneOpacity(
+  mode: DataMode,
+  data: AQIResponse | FloodResponse | HeatwaveResponse | undefined
+): number {
+  let value = 0;
+  
   if (mode === "aqi" && data && "aqi" in data) {
     value = data.aqi || 0;
-    color = getAQIHeatmapColor(value);
+    return 0.3 + (Math.min(value, 300) / 300) * 0.4;
   } else if (mode === "flood" && data && "floodRisk" in data) {
     value = data.floodRisk || 0;
-    color = getFloodHeatmapColor(value);
+    return 0.3 + (value / 100) * 0.4;
   } else if (mode === "heatwave" && data && "heatIndex" in data) {
     value = data.heatIndex || 0;
-    color = getHeatwaveHeatmapColor(value);
+    return 0.3 + (Math.min(value - 20, 35) / 35) * 0.4;
   }
-
-  // Higher values = larger radius and higher opacity
-  const normalizedValue = mode === "aqi" ? value / 300 : mode === "flood" ? value / 100 : (value - 20) / 35;
-  const radius = 4000 + normalizedValue * 4000; // 4km to 8km radius
-  const opacity = 0.2 + normalizedValue * 0.3; // 0.2 to 0.5 opacity
-
-  return { color, radius, opacity };
+  return 0.3;
 }
 
 // Map controls component
@@ -268,20 +292,27 @@ export function HyderabadMap({
         {/* Restrict bounds to Hyderabad */}
         <MapBoundsEnforcer />
 
-        {/* Heatmap Circles for each zone */}
+        {/* Heatmap Polygons for each zone - colored based on data severity */}
         {zones.map((zone) => {
           const data = getDataForZone(zone);
-          const config = getHeatmapConfig(mode, data);
+          const color = getZoneColor(mode, data);
+          const opacity = getZoneOpacity(mode, data);
+          const polygon = generateZonePolygon(zone.lat, zone.lng, 8);
+          const isSelected = selectedZone?.id === zone.id;
+          
           return (
-            <Circle
-              key={`heatmap-${zone.id}`}
-              center={[zone.lat, zone.lng]}
-              radius={config.radius}
+            <Polygon
+              key={`polygon-${zone.id}`}
+              positions={polygon}
               pathOptions={{
-                color: config.color,
-                fillColor: config.color,
-                fillOpacity: config.opacity,
-                weight: 0,
+                color: isSelected ? "#ffffff" : color,
+                fillColor: color,
+                fillOpacity: opacity,
+                weight: isSelected ? 3 : 1,
+                opacity: isSelected ? 1 : 0.5,
+              }}
+              eventHandlers={{
+                click: () => onZoneSelect(zone),
               }}
             />
           );
@@ -322,6 +353,7 @@ export function HyderabadMap({
             <span className="text-lg font-bold text-primary">
               {mode === "aqi" ? "AQI" : mode === "flood" ? "Flood Risk" : "Heat"} Map
             </span>
+            <span className="text-xs text-muted-foreground">({zones.length} zones)</span>
           </div>
         </div>
       </div>
