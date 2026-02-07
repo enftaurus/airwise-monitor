@@ -83,32 +83,13 @@ export default function Index() {
 
       {/* Main Tabs */}
       <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-        <div className="sticky top-[65px] z-40 bg-background/95 backdrop-blur-sm border-b border-border">
-          <div className="max-w-[1800px] mx-auto px-4 md:px-6">
-            <TabsList className="h-14 bg-transparent gap-2">
-              <TabsTrigger
-                value="aqi"
-                className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground gap-2 px-6"
-              >
-                <Wind className="w-4 h-4" />
-                AQI
-              </TabsTrigger>
-              <TabsTrigger
-                value="flood"
-                className="data-[state=active]:bg-blue-600 data-[state=active]:text-white gap-2 px-6"
-              >
-                <Droplets className="w-4 h-4" />
-                Floods
-              </TabsTrigger>
-              <TabsTrigger
-                value="heatwave"
-                className="data-[state=active]:bg-orange-600 data-[state=active]:text-white gap-2 px-6"
-              >
-                <Thermometer className="w-4 h-4" />
-                Heatwave
-              </TabsTrigger>
-            </TabsList>
-          </div>
+        {/* Hide tab buttons but keep tab content structure */}
+        <div className="hidden">
+          <TabsList>
+            <TabsTrigger value="aqi">AQI</TabsTrigger>
+            <TabsTrigger value="flood">Floods</TabsTrigger>
+            <TabsTrigger value="heatwave">Heatwave</TabsTrigger>
+          </TabsList>
         </div>
 
         {/* Content Area */}
