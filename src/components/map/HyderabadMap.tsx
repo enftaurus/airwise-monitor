@@ -1,5 +1,5 @@
-import { useEffect, useRef } from "react";
-import { MapContainer, TileLayer, useMap, Marker, Popup, Polygon } from "react-leaflet";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { MapContainer, TileLayer, useMap, CircleMarker, Popup } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { MapPin, ZoomIn, ZoomOut, Locate } from "lucide-react";
@@ -37,21 +37,9 @@ interface HyderabadMapProps {
   onZoneSelect: (zone: ZoneData) => void;
 }
 
-// Generate polygon coordinates for each zone (hexagonal shape around the point)
-function generateZonePolygon(lat: number, lng: number, radiusKm: number = 8): [number, number][] {
-  const points: [number, number][] = [];
-  const numPoints = 6; // Hexagon
-  
-  for (let i = 0; i < numPoints; i++) {
-    const angle = (i * 360 / numPoints) * (Math.PI / 180);
-    // Approximate degree offset for the radius
-    const latOffset = (radiusKm / 111) * Math.cos(angle);
-    const lngOffset = (radiusKm / (111 * Math.cos(lat * Math.PI / 180))) * Math.sin(angle);
-    points.push([lat + latOffset, lng + lngOffset]);
-  }
-  
-  return points;
-}
+const ZONE_RADIUS_METERS = 3000;
+const INDIA_CENTER: [number, number] = [22.5937, 78.9629];
+const TELANGANA_CENTER: [number, number] = [17.9784, 79.5941];
 
 // Custom marker icon based on data mode
 function createZoneIcon(
@@ -200,9 +188,85 @@ function MapBoundsEnforcer() {
       [HYDERABAD_BOUNDS.north, HYDERABAD_BOUNDS.east]
     );
     map.setMaxBounds(bounds);
-    map.setMinZoom(10);
-    map.setMaxZoom(15);
+    map.setMinZoom(6);
+    map.setMaxZoom(16);
   }, [map]);
+
+  return null;
+}
+
+function HeatmapOverlay({ points }: { points: [number, number, number][] }) {
+  const map = useMap();
+
+  useEffect(() => {
+    if (!points.length) return;
+
+    let heatLayer: L.Layer & { bringToBack?: () => void } | null = null;
+
+    if (typeof window !== "undefined") {
+      (window as unknown as { L: typeof L }).L = L;
+    }
+
+    import("leaflet.heat").then(() => {
+      const leafletWithHeat = L as unknown as {
+        heatLayer: (
+          data: [number, number, number][],
+          options: Record<string, unknown>
+        ) => L.Layer & { bringToBack: () => void };
+      };
+
+      heatLayer = leafletWithHeat.heatLayer(points, {
+        radius: 30,
+        blur: 20,
+        maxZoom: 12,
+        minOpacity: 0.25,
+        maxOpacity: 0.6,
+        gradient: {
+          0.0: "#2ecc71",
+          0.5: "#f1c40f",
+          1.0: "#e74c3c",
+        },
+      }).addTo(map);
+
+      heatLayer.bringToBack();
+    });
+
+    return () => {
+      if (heatLayer) map.removeLayer(heatLayer);
+    };
+  }, [map, points]);
+
+  return null;
+}
+
+function MapIntroAnimation({ onComplete }: { onComplete: () => void }) {
+  const map = useMap();
+
+  useEffect(() => {
+    map.setView(INDIA_CENTER, 5, { animate: false });
+
+    const toTelangana = window.setTimeout(() => {
+      const bounds = L.latLngBounds(
+        [HYDERABAD_BOUNDS.south, HYDERABAD_BOUNDS.west],
+        [HYDERABAD_BOUNDS.north, HYDERABAD_BOUNDS.east]
+      );
+      map.flyToBounds(bounds, { duration: 2.2, padding: [20, 20] });
+    }, 600);
+
+    const toHyderabad = window.setTimeout(() => {
+      map.flyTo(HYDERABAD_CENTER, 11, { duration: 2.0, easeLinearity: 0.25 });
+    }, 3000);
+
+    const finish = window.setTimeout(() => {
+      window.setTimeout(onComplete, 2300);
+    }, 5200);
+
+    return () => {
+      window.clearTimeout(toTelangana);
+      window.clearTimeout(toHyderabad);
+      window.clearTimeout(finish);
+    };
+  }, [map, onComplete]);
 
   return null;
 }
@@ -217,6 +281,7 @@ export function HyderabadMap({
   onZoneSelect,
 }: HyderabadMapProps) {
   const mapRef = useRef<L.Map>(null);
+  const [boundsEnabled, setBoundsEnabled] = useState(false);
 
   const getDataForZone = (zone: ZoneData) => {
     if (mode === "aqi") return aqiData[zone.id];
@@ -273,11 +338,28 @@ export function HyderabadMap({
     return `<div class="font-semibold">${zone.name}</div><div class="text-xs text-gray-400">Loading...</div>`;
   };
 
+  const heatData = useMemo(() => {
+    return zones.map((zone) => {
+      const data = getDataForZone(zone);
+      let intensity = 0.6;
+
+      if (mode === "aqi" && data && "aqi" in data) {
+        intensity = Math.min((data.aqi || 0) / 300, 1);
+      } else if (mode === "flood" && data && "floodRisk" in data) {
+        intensity = Math.min((data.floodRisk || 0) / 100, 1);
+      } else if (mode === "heatwave" && data && "heatIndex" in data) {
+        intensity = Math.min(((data.heatIndex || 20) - 20) / 40, 1);
+      }
+
+      return [zone.lat, zone.lng, Math.min(Math.max(intensity, 0), 1)] as [number, number, number];
+    });
+  }, [zones, mode, aqiData, floodData, heatwaveData]);
+
   return (
     <div className="relative w-full h-full min-h-[400px] rounded-2xl overflow-hidden">
       <MapContainer
-        center={HYDERABAD_CENTER}
-        zoom={11}
+        center={TELANGANA_CENTER}
+        zoom={7}
         ref={mapRef}
         className="w-full h-full"
         zoomControl={false}
@@ -289,58 +371,39 @@ export function HyderabadMap({
           url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
         />
 
-        {/* Restrict bounds to Hyderabad */}
-        <MapBoundsEnforcer />
+        {/* Intro animation */}
+        <MapIntroAnimation onComplete={() => setBoundsEnabled(true)} />
 
-        {/* Heatmap Polygons for each zone - colored based on data severity */}
-        {zones.map((zone) => {
-          const data = getDataForZone(zone);
-          const color = getZoneColor(mode, data);
-          const opacity = getZoneOpacity(mode, data);
-          const polygon = generateZonePolygon(zone.lat, zone.lng, 8);
-          const isSelected = selectedZone?.id === zone.id;
-          
-          return (
-            <Polygon
-              key={`polygon-${zone.id}`}
-              positions={polygon}
-              pathOptions={{
-                color: isSelected ? "#ffffff" : color,
-                fillColor: color,
-                fillOpacity: opacity,
-                weight: isSelected ? 3 : 1,
-                opacity: isSelected ? 1 : 0.5,
-              }}
-              eventHandlers={{
-                click: () => onZoneSelect(zone),
-              }}
-            />
-          );
-        })}
+        {/* Restrict bounds to Telangana after intro */}
+        {boundsEnabled && <MapBoundsEnforcer />}
 
-        {/* Zone Markers */}
-        {zones.map((zone) => {
-          const data = getDataForZone(zone);
-          const isSelected = selectedZone?.id === zone.id;
-          return (
-            <Marker
-              key={zone.id}
-              position={[zone.lat, zone.lng]}
-              icon={createZoneIcon(zone, mode, data, isSelected)}
-              eventHandlers={{
-                click: () => onZoneSelect(zone),
-              }}
-            >
-              <Popup>
-                <div
-                  dangerouslySetInnerHTML={{
-                    __html: getPopupContent(zone, data),
-                  }}
-                />
-              </Popup>
-            </Marker>
-          );
-        })}
+        {/* Heatmap layers */}
+        <HeatmapOverlay points={heatData} />
+
+        {/* Zone Points */}
+        {zones.map((zone) => (
+          <CircleMarker
+            key={`point-${zone.id}`}
+            center={[zone.lat, zone.lng]}
+            radius={5}
+            pathOptions={{
+              color: "#ffffff",
+              weight: 1,
+              fillColor: "#ffffff",
+              fillOpacity: 0.9,
+            }}
+            eventHandlers={{
+              click: () => onZoneSelect(zone),
+            }}
+          >
+            <Popup>
+              <div className="min-w-[160px]">
+                <div className="font-semibold text-base">{zone.name}</div>
+                <div className="text-xs text-muted-foreground">{zone.direction} • {zone.area}</div>
+              </div>
+            </Popup>
+          </CircleMarker>
+        ))}
 
         {/* Controls */}
         <MapControls />
