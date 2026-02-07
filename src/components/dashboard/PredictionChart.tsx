@@ -36,13 +36,14 @@ export function PredictionChart({
           <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
           <XAxis
             dataKey="time"
-            tick={{ fontSize: 12 }}
+            tick={{ fontSize: 11 }}
             stroke="rgba(255,255,255,0.5)"
+            label={{ value: "Time (hrs)", position: "insideBottom", offset: -2, style: { fontSize: 11, fill: "rgba(255,255,255,0.6)" } }}
           />
           <YAxis
-            tick={{ fontSize: 12 }}
+            tick={{ fontSize: 11 }}
             stroke="rgba(255,255,255,0.5)"
-            label={{ value: unit, angle: -90, position: "insideLeft" }}
+            label={{ value: unit, angle: -90, position: "insideLeft", offset: 15, style: { fontSize: 11, fill: "rgba(255,255,255,0.6)" } }}
           />
           <Tooltip
             contentStyle={{
