@@ -31,28 +31,31 @@ export function PredictionChart({
   return (
     <div className="glass-card rounded-xl p-4 space-y-3">
       <h3 className="text-sm font-semibold">{title}</h3>
-      <ResponsiveContainer width="100%" height={200}>
-        <LineChart data={data} margin={{ top: 5, right: 10, left: -25, bottom: 5 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+      <ResponsiveContainer width="100%" height={220}>
+        <LineChart data={data} margin={{ top: 10, right: 20, left: 10, bottom: 25 }}>
+          <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.08)" />
           <XAxis
             dataKey="time"
-            tick={{ fontSize: 11 }}
-            stroke="rgba(255,255,255,0.5)"
-            label={{ value: "Time (hrs)", position: "insideBottom", offset: -2, style: { fontSize: 11, fill: "rgba(255,255,255,0.6)" } }}
+            tick={{ fontSize: 11, fill: "rgba(255,255,255,0.6)" }}
+            stroke="rgba(255,255,255,0.3)"
+            label={{ value: "Time (hrs)", position: "insideBottom", offset: -15, style: { fontSize: 12, fill: "rgba(255,255,255,0.7)" } }}
           />
           <YAxis
-            tick={{ fontSize: 11 }}
-            stroke="rgba(255,255,255,0.5)"
-            label={{ value: unit, angle: -90, position: "insideLeft", offset: 15, style: { fontSize: 11, fill: "rgba(255,255,255,0.6)" } }}
+            tick={{ fontSize: 11, fill: "rgba(255,255,255,0.6)" }}
+            stroke="rgba(255,255,255,0.3)"
+            width={45}
+            label={{ value: unit, angle: -90, position: "insideLeft", offset: 5, style: { fontSize: 12, fill: "rgba(255,255,255,0.7)" } }}
           />
           <Tooltip
             contentStyle={{
-              backgroundColor: "rgba(0,0,0,0.8)",
+              backgroundColor: "rgba(0,0,0,0.85)",
               border: `1px solid ${color}`,
               borderRadius: "8px",
+              padding: "8px 12px",
             }}
             formatter={(value: number) => [`${value.toFixed(1)} ${unit}`, "Prediction"]}
-            labelStyle={{ color: "rgba(255,255,255,0.8)" }}
+            labelFormatter={(label) => `Time: ${label}`}
+            labelStyle={{ color: "rgba(255,255,255,0.8)", marginBottom: 4 }}
           />
           <Line
             type="monotone"
