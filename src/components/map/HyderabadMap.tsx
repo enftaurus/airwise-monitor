@@ -274,9 +274,11 @@ function MapIntroAnimation({ onComplete }: { onComplete: () => void }) {
 // Pan to selected zone without changing zoom
 function MapPanToZone({ zone }: { zone: ZoneData | null }) {
   const map = useMap();
+  const prevZoneId = useRef<string | null>(null);
 
   useEffect(() => {
-    if (zone) {
+    if (zone && zone.id !== prevZoneId.current) {
+      prevZoneId.current = zone.id;
       map.panTo([zone.lat, zone.lng], { animate: true, duration: 0.8 });
     }
   }, [map, zone]);
