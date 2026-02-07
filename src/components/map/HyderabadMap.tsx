@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { MapContainer, TileLayer, useMap, CircleMarker, Popup } from "react-leaflet";
+import { MapContainer, TileLayer, useMap, CircleMarker, Circle, Popup } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { MapPin, ZoomIn, ZoomOut, Locate } from "lucide-react";
@@ -394,6 +394,30 @@ export function HyderabadMap({
 
         {/* Heatmap layers */}
         <HeatmapOverlay points={heatData} />
+
+        {/* Zone Color Areas */}
+        {zones.map((zone) => {
+          const data = getDataForZone(zone);
+          const color = getZoneColor(mode, data);
+          const opacity = getZoneOpacity(mode, data);
+          return (
+            <Circle
+              key={`area-${zone.id}`}
+              center={[zone.lat, zone.lng]}
+              radius={5500}
+              pathOptions={{
+                color: color,
+                weight: 1,
+                fillColor: color,
+                fillOpacity: opacity,
+                opacity: 0.4,
+              }}
+              eventHandlers={{
+                click: () => onZoneSelect(zone),
+              }}
+            />
+          );
+        })}
 
         {/* Zone Points */}
         {zones.map((zone) => {
