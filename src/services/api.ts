@@ -15,6 +15,8 @@ export interface AQIResponse {
   aqi: number;
   pm25: number;
   pm10: number;
+  dust?: number;
+  o3?: number;
   tvoc: number;
   noise: number;
   lastUpdated: string;
@@ -101,6 +103,8 @@ export function getMockAQIData(zone: ZoneData): AQIResponse {
     aqi: baseAQI,
     pm25: 70 + Math.floor(Math.random() * 40),
     pm10: 90 + Math.floor(Math.random() * 50),
+    dust: 55 + Math.floor(Math.random() * 35),
+    o3: 20 + Math.floor(Math.random() * 15),
     tvoc: 4 + Math.random() * 3,
     noise: 55 + Math.floor(Math.random() * 25),
     lastUpdated: new Date().toLocaleTimeString(),

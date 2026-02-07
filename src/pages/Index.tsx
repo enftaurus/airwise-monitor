@@ -105,6 +105,7 @@ export default function Index() {
                 mode={activeTab}
                 selectedZone={selectedZone}
                 onZoneSelect={setSelectedZone}
+                useMockData={useMockData}
               />
             </div>
 

@@ -35,9 +35,10 @@ interface HyderabadMapProps {
   mode: DataMode;
   selectedZone: ZoneData | null;
   onZoneSelect: (zone: ZoneData) => void;
+  useMockData: boolean;
 }
 
-const ZONE_RADIUS_METERS = 3000;
+const ZONE_RADIUS_METERS = 2500;
 const INDIA_CENTER: [number, number] = [22.5937, 78.9629];
 const TELANGANA_CENTER: [number, number] = [17.9784, 79.5941];
 
@@ -141,11 +142,21 @@ function getZoneOpacity(
 }
 
 // Map controls component
-function MapControls() {
+function MapControls({
+  userLocation,
+  onRequestLocation,
+}: {
+  userLocation: [number, number] | null;
+  onRequestLocation: () => void;
+}) {
   const map = useMap();
 
   const handleLocate = () => {
-    map.setView(HYDERABAD_CENTER, 11);
+    if (userLocation) {
+      map.setView(userLocation, Math.max(map.getZoom(), 12), { animate: true, duration: 0.8 });
+      return;
+    }
+    onRequestLocation();
   };
 
   return (
@@ -271,6 +282,36 @@ function MapIntroAnimation({ onComplete }: { onComplete: () => void }) {
   return null;
 }
 
+function MapUserLocation({ location }: { location: [number, number] | null }) {
+  const map = useMap();
+
+  useEffect(() => {
+    if (!location) return;
+    const marker = L.circleMarker(location, {
+      radius: 6,
+      color: "#38bdf8",
+      weight: 2,
+      fillColor: "#38bdf8",
+      fillOpacity: 0.9,
+    }).addTo(map);
+
+    const pulse = L.circle(location, {
+      radius: 120,
+      color: "#38bdf8",
+      weight: 1,
+      fillColor: "#38bdf8",
+      fillOpacity: 0.15,
+    }).addTo(map);
+
+    return () => {
+      map.removeLayer(marker);
+      map.removeLayer(pulse);
+    };
+  }, [map, location]);
+
+  return null;
+}
+
 // Pan to selected zone without changing zoom
 function MapPanToZone({ zone }: { zone: ZoneData | null }) {
   const map = useMap();
@@ -294,9 +335,44 @@ export function HyderabadMap({
   mode,
   selectedZone,
   onZoneSelect,
+  useMockData,
 }: HyderabadMapProps) {
   const mapRef = useRef<L.Map>(null);
-  const [boundsEnabled, setBoundsEnabled] = useState(false);
+  const [showIntro, setShowIntro] = useState(() => {
+    if (typeof window === "undefined") return true;
+    return window.localStorage.getItem("airwise-map-intro-done") !== "true";
+  });
+  const [boundsEnabled, setBoundsEnabled] = useState(() => !showIntro);
+  const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
+  const [locationError, setLocationError] = useState<string | null>(null);
+  const [now, setNow] = useState(() => new Date());
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(new Date()), 1000);
+    return () => window.clearInterval(timer);
+  }, []);
+
+  const requestUserLocation = () => {
+    if (typeof navigator === "undefined" || !navigator.geolocation) {
+      setLocationError("Geolocation is not supported by this browser.");
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setUserLocation([position.coords.latitude, position.coords.longitude]);
+        setLocationError(null);
+      },
+      (error) => {
+        setLocationError(error.message);
+      },
+      { enableHighAccuracy: true, maximumAge: 30000, timeout: 10000 }
+    );
+  };
+
+  useEffect(() => {
+    requestUserLocation();
+  }, []);
 
   const getDataForZone = (zone: ZoneData) => {
     if (mode === "aqi") return aqiData[zone.id];
@@ -370,11 +446,18 @@ export function HyderabadMap({
     });
   }, [zones, mode, aqiData, floodData, heatwaveData]);
 
+  const selectedAqiData = selectedZone ? aqiData[selectedZone.id] : undefined;
+  const selectedAqiCategory =
+    selectedAqiData && "aqi" in selectedAqiData ? getAQICategory(selectedAqiData.aqi || 0) : null;
+
+  const initialCenter = showIntro ? TELANGANA_CENTER : HYDERABAD_CENTER;
+  const initialZoom = showIntro ? 7 : 11;
+
   return (
     <div className="relative w-full h-full min-h-[400px] rounded-2xl overflow-hidden">
       <MapContainer
-        center={TELANGANA_CENTER}
-        zoom={7}
+        center={initialCenter}
+        zoom={initialZoom}
         ref={mapRef}
         className="w-full h-full"
         zoomControl={false}
@@ -386,14 +469,27 @@ export function HyderabadMap({
           url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
         />
 
-        {/* Intro animation */}
-        <MapIntroAnimation onComplete={() => setBoundsEnabled(true)} />
+        {/* Intro animation (run once) */}
+        {showIntro && (
+          <MapIntroAnimation
+            onComplete={() => {
+              setBoundsEnabled(true);
+              setShowIntro(false);
+              if (typeof window !== "undefined") {
+                window.localStorage.setItem("airwise-map-intro-done", "true");
+              }
+            }}
+          />
+        )}
 
         {/* Restrict bounds to Telangana after intro */}
         {boundsEnabled && <MapBoundsEnforcer />}
 
         {/* Heatmap layers */}
         <HeatmapOverlay points={heatData} />
+
+        {/* User location */}
+        <MapUserLocation location={userLocation} />
 
         {/* Zone Color Areas */}
         {zones.map((zone) => {
@@ -404,7 +500,7 @@ export function HyderabadMap({
             <Circle
               key={`area-${zone.id}`}
               center={[zone.lat, zone.lng]}
-              radius={5500}
+              radius={ZONE_RADIUS_METERS}
               pathOptions={{
                 color: color,
                 weight: 1,
@@ -463,6 +559,9 @@ export function HyderabadMap({
                       </div>
                       <div className="text-[10px] text-gray-400 space-y-0.5">
                         <div>PM2.5: {data.pm25} µg/m³ • PM10: {data.pm10} µg/m³</div>
+                        {data.dust !== undefined && data.o3 !== undefined && (
+                          <div>Dust: {data.dust} µg/m³ • O₃: {data.o3} ppb</div>
+                        )}
                         {data.tvoc !== undefined && <div>TVOC: {data.tvoc} ppb • Noise: {data.noise} dB</div>}
                       </div>
                     </>
@@ -495,7 +594,7 @@ export function HyderabadMap({
         })}
 
         {/* Controls */}
-        <MapControls />
+        <MapControls userLocation={userLocation} onRequestLocation={requestUserLocation} />
         <MapPanToZone zone={selectedZone} />
       </MapContainer>
 
@@ -508,18 +607,44 @@ export function HyderabadMap({
             </span>
             <span className="text-xs text-muted-foreground">({zones.length} zones)</span>
           </div>
+          <div className="text-[11px] text-muted-foreground mt-1">
+            {useMockData ? "Mock Data" : "Live"} • {now.toLocaleDateString()} •{" "}
+            {now.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
+          </div>
         </div>
       </div>
 
       {/* Selected Zone Indicator */}
       {selectedZone && (
         <div className="absolute bottom-4 left-4 z-[1000]">
-          <div className="glass-card rounded-xl px-4 py-2 bg-card/90 backdrop-blur-sm">
+          <div className="glass-card rounded-xl px-4 py-2 bg-card/90 backdrop-blur-sm min-w-[240px]">
             <div className="flex items-center gap-2">
               <MapPin className="w-4 h-4 text-primary" />
               <span className="text-sm font-medium">{selectedZone.name}</span>
               <span className="text-xs text-muted-foreground">({selectedZone.direction})</span>
             </div>
+            {selectedAqiData && selectedAqiCategory && (
+              <div className="mt-2 text-[11px] text-muted-foreground space-y-1">
+                <div className="flex items-center gap-2">
+                  <span className="text-base font-semibold" style={{ color: selectedAqiCategory.color }}>
+                    {selectedAqiData.aqi}
+                  </span>
+                  <span
+                    className="text-[10px] px-1.5 py-0.5 rounded-full"
+                    style={{ background: `${selectedAqiCategory.color}20`, color: selectedAqiCategory.color }}
+                  >
+                    {selectedAqiCategory.label}
+                  </span>
+                </div>
+                <div>PM2.5: {selectedAqiData.pm25} µg/m³ • PM10: {selectedAqiData.pm10} µg/m³</div>
+                {selectedAqiData.dust !== undefined && selectedAqiData.o3 !== undefined && (
+                  <div>Dust: {selectedAqiData.dust} µg/m³ • O₃: {selectedAqiData.o3} ppb</div>
+                )}
+              </div>
+            )}
+            {locationError && (
+              <div className="text-[10px] text-amber-400 mt-2">{locationError}</div>
+            )}
           </div>
         </div>
       )}
