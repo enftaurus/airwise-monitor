@@ -271,6 +271,19 @@ function MapIntroAnimation({ onComplete }: { onComplete: () => void }) {
   return null;
 }
 
+// Pan to selected zone without changing zoom
+function MapPanToZone({ zone }: { zone: ZoneData | null }) {
+  const map = useMap();
+
+  useEffect(() => {
+    if (zone) {
+      map.panTo([zone.lat, zone.lng], { animate: true, duration: 0.8 });
+    }
+  }, [map, zone]);
+
+  return null;
+}
+
 export function HyderabadMap({
   zones,
   aqiData,
@@ -381,32 +394,83 @@ export function HyderabadMap({
         <HeatmapOverlay points={heatData} />
 
         {/* Zone Points */}
-        {zones.map((zone) => (
-          <CircleMarker
-            key={`point-${zone.id}`}
-            center={[zone.lat, zone.lng]}
-            radius={5}
-            pathOptions={{
-              color: "#ffffff",
-              weight: 1,
-              fillColor: "#ffffff",
-              fillOpacity: 0.9,
-            }}
-            eventHandlers={{
-              click: () => onZoneSelect(zone),
-            }}
-          >
-            <Popup>
-              <div className="min-w-[160px]">
-                <div className="font-semibold text-base">{zone.name}</div>
-                <div className="text-xs text-muted-foreground">{zone.direction} • {zone.area}</div>
-              </div>
-            </Popup>
-          </CircleMarker>
-        ))}
+        {zones.map((zone) => {
+          const data = getDataForZone(zone);
+          const color = getZoneColor(mode, data);
+          let value = 0;
+          let label = "";
+          if (mode === "aqi" && data && "aqi" in data) {
+            value = data.aqi || 0;
+            label = getAQICategory(value).label;
+          } else if (mode === "flood" && data && "floodRisk" in data) {
+            value = data.floodRisk || 0;
+            label = getFloodRiskLevel(value).label;
+          } else if (mode === "heatwave" && data && "heatIndex" in data) {
+            value = data.heatIndex || 0;
+            label = getHeatwaveLevel(value).label;
+          }
+
+          return (
+            <CircleMarker
+              key={`point-${zone.id}`}
+              center={[zone.lat, zone.lng]}
+              radius={selectedZone?.id === zone.id ? 10 : 7}
+              pathOptions={{
+                color: selectedZone?.id === zone.id ? "#fff" : color,
+                weight: selectedZone?.id === zone.id ? 3 : 2,
+                fillColor: color,
+                fillOpacity: 0.9,
+              }}
+              eventHandlers={{
+                click: () => onZoneSelect(zone),
+              }}
+            >
+              <Popup>
+                <div className="min-w-[180px] p-1">
+                  <div className="font-semibold text-sm">{zone.name}</div>
+                  <div className="text-[10px] text-gray-400 mb-1.5">{zone.direction} • {zone.area}</div>
+                  {mode === "aqi" && data && "aqi" in data && (
+                    <>
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-xl font-bold" style={{ color }}>{data.aqi}</span>
+                        <span className="text-[10px] px-1.5 py-0.5 rounded-full" style={{ background: `${color}20`, color }}>{label}</span>
+                      </div>
+                      <div className="text-[10px] text-gray-400 space-y-0.5">
+                        <div>PM2.5: {data.pm25} µg/m³ • PM10: {data.pm10} µg/m³</div>
+                        {data.tvoc !== undefined && <div>TVOC: {data.tvoc} ppb • Noise: {data.noise} dB</div>}
+                      </div>
+                    </>
+                  )}
+                  {mode === "flood" && data && "floodRisk" in data && (
+                    <>
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-xl font-bold" style={{ color }}>{data.floodRisk}%</span>
+                        <span className="text-[10px] px-1.5 py-0.5 rounded-full" style={{ background: `${color}20`, color }}>{label}</span>
+                      </div>
+                      <div className="text-[10px] text-gray-400">Water Level: {data.waterLevel.toFixed(1)}m</div>
+                    </>
+                  )}
+                  {mode === "heatwave" && data && "heatIndex" in data && (
+                    <>
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-xl font-bold" style={{ color }}>{data.temperature}°C</span>
+                        <span className="text-[10px] px-1.5 py-0.5 rounded-full" style={{ background: `${color}20`, color }}>{label}</span>
+                      </div>
+                      <div className="text-[10px] text-gray-400">Humidity: {data.humidity}% • Wind: {data.windSpeed} km/h</div>
+                    </>
+                  )}
+                  <div className="text-[9px] text-gray-500 mt-1.5 pt-1 border-t border-gray-700">
+                    📍 {zone.lat.toFixed(4)}, {zone.lng.toFixed(4)}
+                  </div>
+                </div>
+              </Popup>
+            </CircleMarker>
+          );
+        })}
 
         {/* Controls */}
         <MapControls />
+        <MapPanToZone zone={selectedZone} />
       </MapContainer>
 
       {/* Map Title */}
